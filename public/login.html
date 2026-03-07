@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Automated QR Data Collection System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav-links">
+    <a href="/" class="nav-logo"><span class="dot"></span>QR Data System</a>
+    <a href="/">Home</a>
+    <a href="/about">About</a>
+    <a href="/register">Register</a>
+    <a href="/contact">Contact</a>
+    <a href="/login" class="nav-btn">Admin Login</a>
+</nav>
+
+<div class="page-center">
+  <div class="card">
+
+    <div class="card-icon">🔐</div>
+    <h2>Admin Login</h2>
+    <p class="subtitle">Sign in to access the admin panel</p>
+
+    <div class="alert error" id="errorMsg"></div>
+
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="Enter username" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter password">
+    </div>
+
+    <br>
+    <button class="btn btn-primary" onclick="login()" id="loginBtn">Sign In →</button>
+
+    <div class="divider">or</div>
+    <div style="text-align:center;">
+      <a href="/">← Back to Home</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  if (localStorage.getItem("adminToken")) window.location.href = "/admin";
+
+  async function login() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const errorMsg = document.getElementById("errorMsg");
+    const btn      = document.getElementById("loginBtn");
+
+    errorMsg.style.display = "none";
+
+    if (!username || !password) {
+      errorMsg.textContent   = "⚠️ Please enter username and password.";
+      errorMsg.style.display = "block";
+      return;
+    }
+
+    btn.textContent = "Signing in...";
+    btn.disabled    = true;
+
+    try {
+      const res  = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        localStorage.setItem("adminToken", data.token);
+        window.location.href = "/admin";
+      } else {
+        errorMsg.textContent   = "❌ " + (data.message || "Invalid credentials.");
+        errorMsg.style.display = "block";
+        btn.textContent = "Sign In →";
+        btn.disabled    = false;
+      }
+    } catch (err) {
+      errorMsg.textContent   = "❌ Server error. Make sure 'node server.js' is running.";
+      errorMsg.style.display = "block";
+      btn.textContent = "Sign In →";
+      btn.disabled    = false;
+    }
+  }
+
+  document.addEventListener("keydown", e => { if (e.key === "Enter") login(); });
+</script>
+
+<footer>
+  <div class="foot-logo">📡 QR Data System</div>
+  <p>© 2024 Automated QR Data Collection System. Built by Shravani & Vishakha.</p>
+  <div class="foot-links">
+    <a href="/">Home</a><a href="/about">About</a>
+    <a href="/register">Register</a><a href="/contact">Contact</a><a href="/login">Admin</a>
+  </div>
+</footer>
+</body>
+</html>

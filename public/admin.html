@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — QR Data System</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- QR Code library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- Admin Header -->
+<div class="admin-header">
+  <div class="admin-logo">
+    🎓 <span class="brand">QR Data System</span>
+    <span style="color:var(--muted);font-size:13px;font-weight:400;">Admin</span>
+  </div>
+  <div class="admin-actions">
+    <button class="tab-btn" onclick="showTab('registrations')" id="tab-registrations">📊 Registrations</button>
+    <button class="tab-btn" onclick="showTab('formeditor')"    id="tab-formeditor">✏️ Form Editor</button>
+    <button class="tab-btn" onclick="showTab('qr')"            id="tab-qr">📱 QR Code</button>
+    <button class="btn btn-danger" onclick="logout()" style="margin-left:8px;">Logout</button>
+  </div>
+</div>
+
+<div class="admin-body">
+
+  <!-- ═══════════════════════════════════ REGISTRATIONS TAB -->
+  <div id="panel-registrations">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-label">Total Registrations</div>
+        <div class="stat-value" id="totalCount">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏫</div>
+        <div class="stat-label">Colleges</div>
+        <div class="stat-value" id="collegeCount">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-label">Courses</div>
+        <div class="stat-value" id="courseCount">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🕐</div>
+        <div class="stat-label">Latest Entry</div>
+        <div class="stat-value" id="latestTime" style="font-size:13px;font-weight:500;margin-top:8px;">—</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <div class="table-head">
+        <h3>Registered Students</h3>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="search-input" type="text" id="searchBox" placeholder="🔍 Search...">
+          <button class="btn btn-ghost" onclick="exportCSV()" style="width:auto;padding:10px 18px;">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div id="tableWrapper">
+        <div class="loader"><div class="spinner"></div> Loading...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════ FORM EDITOR TAB -->
+  <div id="panel-formeditor" style="display:none; padding:32px 40px;">
+
+    <div style="max-width:800px;">
+      <h2 style="color:var(--white);font-size:26px;font-weight:800;margin-bottom:6px;">Form Editor</h2>
+      <p style="color:var(--muted);margin-bottom:32px;">Edit event details and customize registration form fields.</p>
+
+      <!-- Event Info -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;margin-bottom:24px;">
+        <h3 style="color:var(--white);font-size:18px;font-weight:700;margin-bottom:24px;">📅 Event Details</h3>
+        <div class="form-grid">
+          <div class="field full">
+            <label>Event Name</label>
+            <input type="text" id="cfg_eventName" placeholder="e.g. Tech Fest 2024">
+          </div>
+          <div class="field">
+            <label>Event Date</label>
+            <input type="text" id="cfg_eventDate" placeholder="e.g. 15 December 2024">
+          </div>
+          <div class="field">
+            <label>Venue</label>
+            <input type="text" id="cfg_eventVenue" placeholder="e.g. Main Auditorium">
+          </div>
+          <div class="field full">
+            <label>Description</label>
+            <input type="text" id="cfg_eventDesc" placeholder="Short event description">
+          </div>
+        </div>
+      </div>
+
+      <!-- Fields Editor -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <h3 style="color:var(--white);font-size:18px;font-weight:700;">📝 Form Fields</h3>
+          <button class="btn btn-accent" onclick="addField()" style="width:auto;padding:10px 20px;font-size:14px;">+ Add Field</button>
+        </div>
+        <div id="fieldsEditor"></div>
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <button class="btn btn-primary" onclick="saveConfig()" id="saveBtn" style="max-width:200px;">💾 Save Changes</button>
+        <div class="alert success" id="saveSuccess" style="margin:0;display:none;align-items:center;padding:12px 20px;">✅ Saved!</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════ QR CODE TAB -->
+  <div id="panel-qr" style="display:none; padding:32px 40px;">
+
+    <div style="max-width:700px;">
+      <h2 style="color:var(--white);font-size:26px;font-weight:800;margin-bottom:6px;">QR Code Generator</h2>
+      <p style="color:var(--muted);margin-bottom:32px;">Generate and share the registration form QR code.</p>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px;margin-bottom:24px;">
+
+        <div class="field">
+          <label>Registration Form URL</label>
+          <div style="display:flex;gap:10px;">
+            <input type="text" id="qrUrl" placeholder="http://localhost:3000/register" style="flex:1;">
+            <button class="btn btn-accent" onclick="generateQR()" style="width:auto;padding:12px 24px;">Generate QR</button>
+          </div>
+        </div>
+
+        <!-- QR Display -->
+        <div id="qrResult" style="display:none; margin-top:32px; text-align:center;">
+          <div id="qrCanvas" style="display:inline-block; padding:20px; background:white; border-radius:16px; margin-bottom:20px;"></div>
+          <br>
+          <p style="color:var(--muted);font-size:14px;margin-bottom:20px;" id="qrUrlDisplay"></p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="downloadQR()" style="width:auto;padding:12px 24px;">⬇ Download QR</button>
+            <button class="btn btn-outline" onclick="copyLink()" style="width:auto;padding:12px 24px;">🔗 Copy Link</button>
+            <button class="btn btn-ghost" onclick="shareQR()" style="width:auto;padding:12px 24px;">📤 Share</button>
+          </div>
+        </div>
+
+        <div id="copyToast" style="display:none;margin-top:16px;" class="alert success">✅ Link copied to clipboard!</div>
+
+      </div>
+
+      <!-- Quick share info -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;">
+        <h3 style="color:var(--white);font-size:16px;font-weight:700;margin-bottom:16px;">📤 How to Share</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="background:var(--surface2);border-radius:12px;padding:16px;">
+            <div style="font-size:22px;margin-bottom:8px;">📱</div>
+            <div style="color:var(--white);font-weight:600;font-size:14px;margin-bottom:4px;">Print & Display</div>
+            <div style="color:var(--muted);font-size:13px;">Download and print the QR code. Students scan to register instantly.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:12px;padding:16px;">
+            <div style="font-size:22px;margin-bottom:8px;">🔗</div>
+            <div style="color:var(--white);font-weight:600;font-size:14px;margin-bottom:4px;">Share the Link</div>
+            <div style="color:var(--muted);font-size:13px;">Copy the URL and share on WhatsApp, Instagram, or email.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:12px;padding:16px;">
+            <div style="font-size:22px;margin-bottom:8px;">📊</div>
+            <div style="color:var(--white);font-weight:600;font-size:14px;margin-bottom:4px;">Project on Screen</div>
+            <div style="color:var(--muted);font-size:13px;">Show QR on projector during event for mass scanning.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:12px;padding:16px;">
+            <div style="font-size:22px;margin-bottom:8px;">📧</div>
+            <div style="color:var(--white);font-weight:600;font-size:14px;margin-bottom:4px;">Email Campaign</div>
+            <div style="color:var(--muted);font-size:13px;">Include the QR image in college newsletters or emails.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end admin-body -->
+
+<script>
+  const token = localStorage.getItem("adminToken");
+  if (!token) window.location.href = "/login";
+
+  let allUsers  = [];
+  let allFields = [];
+  let qrInstance = null;
+
+  // ── TABS ──
+  function showTab(tab) {
+    ["registrations","formeditor","qr"].forEach(t => {
+      document.getElementById("panel-" + t).style.display = t === tab ? "block" : "none";
+      document.getElementById("tab-" + t).classList.toggle("active", t === tab);
+    });
+    if (tab === "formeditor") loadConfigIntoEditor();
+    if (tab === "qr") prefillQrUrl();
+  }
+
+  // ── LOAD DATA ──
+  async function loadData() {
+    try {
+      const res  = await fetch("/users", { headers: { "Authorization": "Bearer " + token } });
+      if (res.status === 401) { localStorage.removeItem("adminToken"); window.location.href = "/login"; return; }
+      const data = await res.json();
+      allUsers  = data.users  || [];
+      allFields = data.fields || [];
+      updateStats(allUsers);
+      renderTable(allUsers, allFields);
+    } catch (err) {
+      document.getElementById("tableWrapper").innerHTML = `
+        <div class="empty-state"><div class="ei">⚠️</div>
+        <p>Could not connect to server.<br>Run <strong>node server.js</strong> in terminal.</p></div>`;
+    }
+  }
+
+  // ── STATS ──
+  function updateStats(users) {
+    document.getElementById("totalCount").textContent   = users.length;
+    document.getElementById("collegeCount").textContent = new Set(users.map(u => u.college).filter(Boolean)).size || "—";
+    document.getElementById("courseCount").textContent  = new Set(users.map(u => u.course).filter(Boolean)).size  || "—";
+    if (users.length > 0) document.getElementById("latestTime").textContent = users[users.length-1].timestamp;
+  }
+
+  // ── TABLE ──
+  function renderTable(users, fields) {
+    const wrapper = document.getElementById("tableWrapper");
+    document.getElementById("rowCount") && (document.getElementById("rowCount").textContent = users.length + " students");
+
+    if (users.length === 0) {
+      wrapper.innerHTML = `<div class="empty-state"><div class="ei">📭</div><p>No registrations yet.<br>Share the registration link!</p></div>`;
+      return;
+    }
+
+    const cols = fields.length ? fields : [
+      {id:"name",label:"Name"},{id:"email",label:"Email"},{id:"phone",label:"Phone"},
+      {id:"college",label:"College"},{id:"course",label:"Course"},{id:"year",label:"Year"}
+    ];
+
+    let html = `<table><thead><tr><th>#</th><th>Timestamp</th>`;
+    cols.forEach(f => { html += `<th>${f.label}</th>`; });
+    html += `<th>Action</th></tr></thead><tbody>`;
+
+    users.forEach((user, i) => {
+      html += `<tr><td><span class="badge">${i+1}</span></td>
+        <td style="font-size:12px;color:var(--muted);">${user.timestamp}</td>`;
+      cols.forEach(f => {
+        html += `<td>${esc(user[f.id] || "—")}</td>`;
+      });
+      html += `<td><button class="btn btn-danger" onclick="deleteUser(${user.id})">🗑 Delete</button></td></tr>`;
+    });
+
+    html += `</tbody></table>`;
+    wrapper.innerHTML = html;
+  }
+
+  // ── SEARCH ──
+  document.getElementById("searchBox").addEventListener("input", function() {
+    const q = this.value.toLowerCase();
+    const filtered = allUsers.filter(u => Object.values(u).some(v => String(v).toLowerCase().includes(q)));
+    renderTable(filtered, allFields);
+  });
+
+  // ── DELETE ──
+  async function deleteUser(id) {
+    if (!confirm("Delete this registration?")) return;
+    const res = await fetch("/users/" + id, { method: "DELETE", headers: { "Authorization": "Bearer " + token } });
+    if (res.ok) { allUsers = allUsers.filter(u => u.id !== id); updateStats(allUsers); renderTable(allUsers, allFields); }
+  }
+
+  // ── EXPORT CSV ──
+  function exportCSV() {
+    if (allUsers.length === 0) { alert("No data to export."); return; }
+    const cols    = allFields.length ? allFields : [{id:"name"},{id:"email"},{id:"phone"},{id:"college"},{id:"course"},{id:"year"}];
+    const headers = ["#","Timestamp", ...cols.map(f => f.label || f.id)];
+    const rows    = allUsers.map((u,i) => [i+1, u.timestamp, ...cols.map(f => u[f.id] || "")]);
+    const csv     = [headers,...rows].map(r => r.map(v => `"${v}"`).join(",")).join("\n");
+    const a       = document.createElement("a");
+    a.href        = URL.createObjectURL(new Blob([csv], { type:"text/csv" }));
+    a.download    = "registrations_" + new Date().toISOString().slice(0,10) + ".csv";
+    a.click();
+  }
+
+  // ── LOGOUT ──
+  function logout() { localStorage.removeItem("adminToken"); window.location.href = "/login"; }
+
+  // ── ESCAPE ──
+  function esc(s) { return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  // ════════════════════════════════════════
+  // FORM EDITOR
+  // ════════════════════════════════════════
+  let editorFields = [];
+
+  async function loadConfigIntoEditor() {
+    try {
+      const res    = await fetch("/api/config");
+      const config = await res.json();
+
+      document.getElementById("cfg_eventName").value  = config.eventName  || "";
+      document.getElementById("cfg_eventDate").value  = config.eventDate  || "";
+      document.getElementById("cfg_eventVenue").value = config.eventVenue || "";
+      document.getElementById("cfg_eventDesc").value  = config.eventDesc  || "";
+
+      editorFields = JSON.parse(JSON.stringify(config.fields || []));
+      renderFieldsEditor();
+    } catch(e) { console.error(e); }
+  }
+
+  function renderFieldsEditor() {
+    const container = document.getElementById("fieldsEditor");
+    container.innerHTML = "";
+
+    editorFields.forEach((f, i) => {
+      const div = document.createElement("div");
+      div.style.cssText = "background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;";
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="color:var(--muted);font-size:13px;font-weight:600;">Field ${i+1}</span>
+          <div style="flex:1;"></div>
+          ${editorFields.length > 1 ? `<button onclick="removeField(${i})" style="background:rgba(255,77,109,0.15);color:var(--danger);border:1px solid rgba(255,77,109,0.3);padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;">✕ Remove</button>` : ''}
+        </div>
+        <div class="form-grid" style="gap:12px;">
+          <div class="field">
+            <label>Field Label</label>
+            <input type="text" value="${f.label}" oninput="editorFields[${i}].label=this.value" placeholder="e.g. Full Name">
+          </div>
+          <div class="field">
+            <label>Field ID (no spaces)</label>
+            <input type="text" value="${f.id}" oninput="editorFields[${i}].id=this.value" placeholder="e.g. name">
+          </div>
+          <div class="field">
+            <label>Type</label>
+            <select onchange="editorFields[${i}].type=this.value" style="width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'Outfit',sans-serif;font-size:15px;outline:none;">
+              <option value="text"  ${f.type==="text"  ?"selected":""}>Text</option>
+              <option value="email" ${f.type==="email" ?"selected":""}>Email</option>
+              <option value="tel"   ${f.type==="tel"   ?"selected":""}>Phone</option>
+              <option value="number"${f.type==="number"?"selected":""}>Number</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Placeholder</label>
+            <input type="text" value="${f.placeholder}" oninput="editorFields[${i}].placeholder=this.value" placeholder="Hint text">
+          </div>
+          <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:24px;">
+            <input type="checkbox" id="req_${i}" ${f.required?"checked":""} onchange="editorFields[${i}].required=this.checked" style="width:18px;height:18px;accent-color:var(--primary);">
+            <label for="req_${i}" style="text-transform:none;font-size:14px;color:var(--text);cursor:pointer;">Required field</label>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function addField() {
+    editorFields.push({ id: "field_" + Date.now(), label: "New Field", type: "text", placeholder: "Enter value", required: false });
+    renderFieldsEditor();
+  }
+
+  function removeField(i) {
+    editorFields.splice(i, 1);
+    renderFieldsEditor();
+  }
+
+  async function saveConfig() {
+    const btn = document.getElementById("saveBtn");
+    btn.textContent = "Saving..."; btn.disabled = true;
+
+    const payload = {
+      eventName:  document.getElementById("cfg_eventName").value.trim(),
+      eventDate:  document.getElementById("cfg_eventDate").value.trim(),
+      eventVenue: document.getElementById("cfg_eventVenue").value.trim(),
+      eventDesc:  document.getElementById("cfg_eventDesc").value.trim(),
+      fields:     editorFields
+    };
+
+    try {
+      const res = await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type":"application/json", "Authorization":"Bearer " + token },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const s = document.getElementById("saveSuccess");
+        s.style.display = "flex"; setTimeout(() => s.style.display = "none", 3000);
+        allFields = editorFields;
+      }
+    } catch(e) { alert("Save failed!"); }
+
+    btn.textContent = "💾 Save Changes"; btn.disabled = false;
+  }
+
+  // ════════════════════════════════════════
+  // QR CODE
+  // ════════════════════════════════════════
+  function prefillQrUrl() {
+    const input = document.getElementById("qrUrl");
+    if (!input.value) input.value = window.location.origin + "/register";
+  }
+
+  function generateQR() {
+    const url = document.getElementById("qrUrl").value.trim();
+    if (!url) { alert("Please enter a URL."); return; }
+
+    const canvas = document.getElementById("qrCanvas");
+    canvas.innerHTML = "";
+
+    if (qrInstance) { try { qrInstance.clear(); } catch(e) {} }
+
+    qrInstance = new QRCode(canvas, {
+      text:          url,
+      width:         220,
+      height:        220,
+      colorDark:     "#000000",
+      colorLight:    "#ffffff",
+      correctLevel:  QRCode.CorrectLevel.H
+    });
+
+    document.getElementById("qrUrlDisplay").textContent = url;
+    document.getElementById("qrResult").style.display   = "block";
+  }
+
+  function downloadQR() {
+    const canvas = document.querySelector("#qrCanvas canvas") || document.querySelector("#qrCanvas img");
+    if (!canvas) { alert("Please generate QR first."); return; }
+
+    let dataUrl;
+    if (canvas.tagName === "CANVAS") {
+      dataUrl = canvas.toDataURL("image/png");
+    } else {
+      // For img element, draw on temp canvas
+      const c = document.createElement("canvas");
+      c.width = c.height = 260;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 260, 260);
+      ctx.drawImage(canvas, 20, 20, 220, 220);
+      dataUrl = c.toDataURL("image/png");
+    }
+
+    const a    = document.createElement("a");
+    a.href     = dataUrl;
+    a.download = "registration-qr.png";
+    a.click();
+  }
+
+  function copyLink() {
+    const url = document.getElementById("qrUrl").value.trim();
+    navigator.clipboard.writeText(url).then(() => {
+      const t = document.getElementById("copyToast");
+      t.style.display = "block";
+      setTimeout(() => t.style.display = "none", 2500);
+    });
+  }
+
+  function shareQR() {
+    const url = document.getElementById("qrUrl").value.trim();
+    if (navigator.share) {
+      navigator.share({ title: "Register Now!", text: "Click to register for the event.", url });
+    } else {
+      copyLink();
+    }
+  }
+
+  // Init
+  showTab("registrations");
+  loadData();
+  setInterval(loadData, 30000);
+</script>
+
+<style>
+.tab-btn {
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 9px 18px; font-family: 'Outfit', sans-serif;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--white); border-color: var(--primary); }
+.tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+</style>
+
+</body>
+</html>

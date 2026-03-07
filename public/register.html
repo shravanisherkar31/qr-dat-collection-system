@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — Automated QR Data Collection System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav-links">
+    <a href="/" class="nav-logo"><span class="dot"></span>QR Data System</a>
+    <a href="/">Home</a>
+    <a href="/about">About</a>
+    <a href="/register">Register</a>
+    <a href="/contact">Contact</a>
+    <a href="/login" class="nav-btn">Admin Login</a>
+</nav>
+
+<div class="page-center">
+  <div class="card card-wide">
+
+    <div class="card-icon">📋</div>
+    <h2 id="eventTitle">Loading...</h2>
+    <p class="subtitle" id="eventMeta"></p>
+
+    <div class="alert error"   id="errorMsg"></div>
+    <div class="alert success" id="successMsg"></div>
+
+    <form id="registerForm">
+      <div class="form-grid" id="formFields">
+        <!-- Fields injected dynamically -->
+      </div>
+      <br>
+      <button type="submit" class="btn btn-primary" id="submitBtn">Submit Registration →</button>
+    </form>
+
+    <div class="divider">already registered?</div>
+    <div style="text-align:center;"><a href="/">← Back to Home</a></div>
+
+  </div>
+</div>
+
+<script>
+  let formFields = [];
+
+  async function loadConfig() {
+    try {
+      const res    = await fetch("/api/config");
+      const config = await res.json();
+
+      document.title = config.eventName + " — QR Data System";
+      document.getElementById("eventTitle").textContent = config.eventName;
+      document.getElementById("eventMeta").textContent  =
+        (config.eventDate ? "📅 " + config.eventDate : "") +
+        (config.eventVenue ? "  📍 " + config.eventVenue : "");
+
+      formFields = config.fields;
+      buildForm(config.fields);
+    } catch (err) {
+      document.getElementById("eventTitle").textContent = "Student Registration";
+    }
+  }
+
+  function buildForm(fields) {
+    const container = document.getElementById("formFields");
+    container.innerHTML = "";
+    fields.forEach(f => {
+      const div = document.createElement("div");
+      div.className = "field" + (fields.length <= 2 ? " full" : "");
+      div.innerHTML = `
+        <label>${f.label}${f.required ? ' <span style="color:var(--danger)">*</span>' : ''}</label>
+        <input type="${f.type}" id="field_${f.id}" placeholder="${f.placeholder}" ${f.required ? "required" : ""}>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  document.getElementById("registerForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const btn        = document.getElementById("submitBtn");
+    const errorMsg   = document.getElementById("errorMsg");
+    const successMsg = document.getElementById("successMsg");
+
+    errorMsg.style.display   = "none";
+    successMsg.style.display = "none";
+
+    const userData = {};
+    for (const f of formFields) {
+      const val = document.getElementById("field_" + f.id)?.value.trim();
+      if (f.required && !val) {
+        errorMsg.textContent   = "⚠️ Please fill in all required fields.";
+        errorMsg.style.display = "block";
+        return;
+      }
+      userData[f.id] = val || "";
+    }
+
+    btn.textContent = "Submitting...";
+    btn.disabled    = true;
+
+    try {
+      const res  = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData)
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        successMsg.textContent   = "✅ Registration successful! You're all set.";
+        successMsg.style.display = "block";
+        document.getElementById("registerForm").reset();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      errorMsg.textContent   = "❌ " + (err.message || "Could not connect to server.");
+      errorMsg.style.display = "block";
+    }
+
+    btn.textContent = "Submit Registration →";
+    btn.disabled    = false;
+  });
+
+  loadConfig();
+</script>
+
+<footer>
+  <div class="foot-logo">📡 QR Data System</div>
+  <p>© 2024 Automated QR Data Collection System. Built by Shravani & Vishakha.</p>
+  <div class="foot-links">
+    <a href="/">Home</a><a href="/about">About</a>
+    <a href="/register">Register</a><a href="/contact">Contact</a><a href="/login">Admin</a>
+  </div>
+</footer>
+</body>
+</html>
