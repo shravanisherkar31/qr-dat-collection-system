@@ -9,8 +9,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ── MongoDB Connection ──
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
-const DB_NAME   = "eduportal";
+// ── MongoDB Connection ──
+// ── MongoDB Connection ──
+const MONGO_URI = "mongodb://shravanis_db:9011878255@ac-mkxm4c4-shard-00-00.rtq6qpq.mongodb.net:27017,ac-mkxm4c4-shard-00-01.rtq6qpq.mongodb.net:27017,ac-mkxm4c4-shard-00-02.rtq6qpq.mongodb.net:27017/qrdatacollection?ssl=true&replicaSet=atlas-hrupio-shard-0&authSource=admin";
+
+const DB_NAME = "qrdatacollection";
 let db;
 
 async function connectDB() {
@@ -19,7 +22,8 @@ async function connectDB() {
     db = client.db(DB_NAME);
     console.log("✅ MongoDB connected");
   } catch (err) {
-    console.log("⚠️  MongoDB not available, using memory storage");
+    console.log("⚠️ MongoDB not available, using memory storage");
+    console.log(err);
     db = null;
   }
 }
@@ -144,12 +148,3 @@ app.listen(3000, async () => {
   await connectDB();   
 });
 
-const mongoose = require("mongoose");
-
-mongoose.connect("mongodb+srv://shravanis_db:9011878255@cluster0.rtq6qpq.mongodb.net/?appName=Cluster0")
-.then(() => {
-  console.log("MongoDB connected");
-})
-.catch((err) => {
-  console.log(err);
-});
